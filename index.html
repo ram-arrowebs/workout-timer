@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Workout Counter</title>
+  <meta name="description" content="Voice-counted rep and set timer for workouts.">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Counter">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Setup screen -->
+  <section id="screen-setup" class="screen">
+    <div class="setup-card">
+      <h1>Workout Counter</h1>
+      <p class="hint">The app speaks each rep number. Keep the screen on and the volume up.</p>
+
+      <form id="setup-form" novalidate>
+        <label class="field">
+          <span>Sets</span>
+          <input id="in-sets" type="number" inputmode="numeric" min="1" max="99" step="1" value="3" required>
+        </label>
+        <label class="field">
+          <span>Reps per set</span>
+          <input id="in-reps" type="number" inputmode="numeric" min="1" max="999" step="1" value="10" required>
+        </label>
+        <label class="field">
+          <span>Seconds per rep</span>
+          <input id="in-rep-sec" type="number" inputmode="decimal" min="0.5" max="600" step="0.5" value="3" required>
+        </label>
+        <label class="field">
+          <span>Rest between sets (seconds)</span>
+          <input id="in-rest-sec" type="number" inputmode="numeric" min="0" max="3600" step="1" value="90" required>
+        </label>
+
+        <p id="setup-error" class="error" hidden></p>
+        <p id="speech-warning" class="error" hidden>
+          Speech synthesis is not available in this browser. The counter will run silently.
+        </p>
+
+        <button id="btn-start" type="submit" class="btn btn-primary">Start</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Session screen -->
+  <section id="screen-session" class="screen session" hidden>
+    <header class="stats">
+      <div class="stat">
+        <span class="stat-label">Set</span>
+        <span class="stat-value"><span id="s-set">1</span><span class="stat-total">/<span id="s-set-total">3</span></span></span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Rep</span>
+        <span class="stat-value"><span id="s-rep">1</span><span class="stat-total">/<span id="s-rep-total">10</span></span></span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Elapsed</span>
+        <span class="stat-value" id="s-elapsed">00:00</span>
+      </div>
+    </header>
+
+    <main class="center">
+      <div id="s-phase" class="phase-label">Rep</div>
+      <div id="s-number" class="big-number">1</div>
+      <div id="s-paused" class="paused-badge" hidden>Paused</div>
+    </main>
+
+    <footer class="controls">
+      <button id="btn-pause" type="button" class="btn btn-secondary">Pause</button>
+      <button id="btn-complete" type="button" class="btn btn-danger">Complete</button>
+    </footer>
+  </section>
+
+  <!-- Summary screen -->
+  <section id="screen-summary" class="screen" hidden>
+    <div class="setup-card">
+      <h1 id="summary-title">Workout complete</h1>
+      <dl class="summary">
+        <div><dt>Total time</dt><dd id="sum-elapsed">00:00</dd></div>
+        <div><dt>Sets completed</dt><dd id="sum-sets">0</dd></div>
+        <div><dt>Reps completed</dt><dd id="sum-reps">0</dd></div>
+      </dl>
+      <button id="btn-new" type="button" class="btn btn-primary">New workout</button>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () { /* offline support unavailable */ });
+      });
+    }
+  </script>
+</body>
+</html>
