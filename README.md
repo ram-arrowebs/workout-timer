@@ -7,6 +7,8 @@ set. Pause, resume or complete the session at any time.
 
 No build step and no dependencies: plain HTML, CSS and JavaScript.
 
+Live app: <https://ram-arrowebs.github.io/workout-timer/> (open on your phone and use "Add to Home Screen" to install).
+
 ## Run locally
 
 ```
