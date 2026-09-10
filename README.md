@@ -1,7 +1,8 @@
 # Workout Counter
 
 A small installable web app (PWA) that counts your reps out loud. Set the number of sets, reps
-per set, seconds per rep and rest seconds between sets, then press Start. The current rep number
+per set, seconds per rep, rest seconds between sets and an optional get-ready countdown, then press
+Start. After the countdown (spoken 3, 2, 1) the current rep number
 fills the screen and is spoken by the device. Rest periods show a countdown and announce the next
 set. Pause, resume or complete the session at any time.
 

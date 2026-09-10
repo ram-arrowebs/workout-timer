@@ -2,6 +2,7 @@
   --bg: #0f1115;
   --bg-rest: #0b2a3a;
   --bg-paused: #2a2410;
+  --bg-countdown: #2b1a3d;
   --panel: #181b22;
   --text: #f2f4f8;
   --muted: #9aa3b2;
@@ -30,6 +31,7 @@ body {
   transition: background-color 250ms ease;
 }
 body.phase-rest { background: var(--bg-rest); }
+body.phase-countdown { background: var(--bg-countdown); }
 body.is-paused { background: var(--bg-paused); }
 
 .screen {
@@ -192,6 +194,7 @@ h1 {
   color: var(--muted);
 }
 body.phase-rest .phase-label { color: #7fd3ff; }
+body.phase-countdown .phase-label { color: #d9b8ff; }
 
 .big-number {
   font-size: min(55vw, 55vh);

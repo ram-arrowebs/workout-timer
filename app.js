@@ -2,7 +2,7 @@
   'use strict';
 
   var STORAGE_KEY = 'wotimer.settings';
-  var DEFAULTS = { sets: 3, reps: 10, repSec: 3, restSec: 90 };
+  var DEFAULTS = { sets: 3, reps: 10, repSec: 3, restSec: 90, countdownSec: 5 };
   var TICK_MS = 100;
 
   function $(id) { return document.getElementById(id); }
@@ -16,6 +16,7 @@
     inReps: $('in-reps'),
     inRepSec: $('in-rep-sec'),
     inRestSec: $('in-rest-sec'),
+    inCountdown: $('in-countdown'),
     setupError: $('setup-error'),
     speechWarning: $('speech-warning'),
     sSet: $('s-set'),
@@ -100,6 +101,7 @@
     el.inReps.value = s.reps;
     el.inRepSec.value = s.repSec;
     el.inRestSec.value = s.restSec;
+    el.inCountdown.value = s.countdownSec;
   }
 
   function readForm() {
@@ -107,13 +109,15 @@
     var reps = parseInt(el.inReps.value, 10);
     var repSec = parseFloat(el.inRepSec.value);
     var restSec = parseInt(el.inRestSec.value, 10);
+    var countdownSec = parseInt(el.inCountdown.value, 10);
 
     if (!(sets >= 1 && sets <= 99)) return { error: 'Sets must be between 1 and 99.' };
     if (!(reps >= 1 && reps <= 999)) return { error: 'Reps must be between 1 and 999.' };
     if (!(repSec >= 0.5 && repSec <= 600)) return { error: 'Seconds per rep must be between 0.5 and 600.' };
     if (!(restSec >= 0 && restSec <= 3600)) return { error: 'Rest must be between 0 and 3600 seconds.' };
+    if (!(countdownSec >= 0 && countdownSec <= 60)) return { error: 'Countdown must be between 0 and 60 seconds.' };
 
-    return { cfg: { sets: sets, reps: reps, repSec: repSec, restSec: restSec } };
+    return { cfg: { sets: sets, reps: reps, repSec: repSec, restSec: restSec, countdownSec: countdownSec } };
   }
 
   // ----------------------------------------------------------- timer state
@@ -122,7 +126,7 @@
   var timerId = null;
 
   var state = {
-    phase: 'idle',      // 'idle' | 'rep' | 'rest' | 'done'
+    phase: 'idle',      // 'idle' | 'countdown' | 'rep' | 'rest' | 'done'
     paused: false,
     set: 1,
     rep: 1,
@@ -132,33 +136,44 @@
     pausedAt: 0,
     pausedTotal: 0,
     repsDone: 0,
-    setsDone: 0
+    setsDone: 0,
+    countdownSpoken: 0
   };
 
   function now() { return performance.now(); }
 
-  function isActive() { return state.phase === 'rep' || state.phase === 'rest'; }
+  function isActive() { return state.phase === 'countdown' || state.phase === 'rep' || state.phase === 'rest'; }
 
   function effectiveNow(t) { return state.paused ? state.pausedAt : t; }
 
-  function elapsedMs(t) { return Math.max(0, effectiveNow(t) - state.sessionStart - state.pausedTotal); }
+  function elapsedMs(t) {
+    if (state.phase === 'countdown') return 0;
+    return Math.max(0, effectiveNow(t) - state.sessionStart - state.pausedTotal);
+  }
 
   function start(cfg) {
     settings = cfg;
     var t = now();
-    state.phase = 'rep';
     state.paused = false;
     state.set = 1;
     state.rep = 1;
     state.phaseStart = t;
-    state.phaseEnd = t + cfg.repSec * 1000;
     state.sessionStart = t;
     state.pausedAt = 0;
     state.pausedTotal = 0;
     state.repsDone = 0;
     state.setsDone = 0;
+    state.countdownSpoken = 0;
 
-    announceSet();
+    if (cfg.countdownSec > 0) {
+      state.phase = 'countdown';
+      state.phaseEnd = t + cfg.countdownSec * 1000;
+      speech.say('Get ready');
+    } else {
+      state.phase = 'rep';
+      state.phaseEnd = t + cfg.repSec * 1000;
+      announceSet();
+    }
 
     if (timerId) clearInterval(timerId);
     timerId = setInterval(tick, TICK_MS);
@@ -182,10 +197,29 @@
     // Catch up if timers were throttled; deadlines are absolute so no drift accumulates.
     var guard = 0;
     while (isActive() && t >= state.phaseEnd && guard++ < 100000) advance();
+    if (state.phase === 'countdown') speakCountdown(t);
     if (isActive()) render(t);
   }
 
+  function speakCountdown(t) {
+    var remaining = Math.ceil((state.phaseEnd - t) / 1000);
+    if (remaining >= 1 && remaining <= 3 && remaining !== state.countdownSpoken) {
+      state.countdownSpoken = remaining;
+      speech.say(remaining);
+    }
+  }
+
   function advance() {
+    if (state.phase === 'countdown') {
+      // The workout clock starts when the countdown ends.
+      state.sessionStart = state.phaseEnd;
+      state.pausedTotal = 0;
+      state.phase = 'rep';
+      state.phaseStart = state.phaseEnd;
+      state.phaseEnd = state.phaseStart + settings.repSec * 1000;
+      announceSet();
+      return;
+    }
     if (state.phase === 'rep') {
       state.repsDone++;
       if (state.rep < settings.reps) {
@@ -249,7 +283,7 @@
     state.paused = false;
     if (timerId) { clearInterval(timerId); timerId = null; }
     releaseWakeLock();
-    document.body.classList.remove('phase-rest', 'is-paused');
+    document.body.classList.remove('phase-rest', 'phase-countdown', 'is-paused');
 
     if (natural) speech.say('Done'); else speech.stop();
 
@@ -275,6 +309,7 @@
   function render(t) {
     var tEff = effectiveNow(t);
     var resting = state.phase === 'rest';
+    var counting = state.phase === 'countdown';
 
     el.sSet.textContent = state.set;
     el.sSetTotal.textContent = settings.sets;
@@ -282,7 +317,10 @@
     el.sRepTotal.textContent = settings.reps;
     el.sElapsed.textContent = formatTime(elapsedMs(t));
 
-    if (resting) {
+    if (counting) {
+      el.sPhase.textContent = 'Get ready';
+      el.sNumber.textContent = Math.max(0, Math.ceil((state.phaseEnd - tEff) / 1000));
+    } else if (resting) {
       el.sPhase.textContent = 'Rest';
       el.sNumber.textContent = Math.max(0, Math.ceil((state.phaseEnd - tEff) / 1000));
     } else {
@@ -291,6 +329,7 @@
     }
 
     document.body.classList.toggle('phase-rest', resting);
+    document.body.classList.toggle('phase-countdown', counting);
     document.body.classList.toggle('is-paused', state.paused);
     el.btnPause.textContent = state.paused ? 'Resume' : 'Pause';
     el.sPaused.hidden = !state.paused;
