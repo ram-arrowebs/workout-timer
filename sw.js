@@ -1,4 +1,4 @@
-var CACHE = 'wotimer-v2';
+var CACHE = 'wotimer-v3';
 var SHELL = [
   './',
   './index.html',

@@ -33,7 +33,9 @@
     sumElapsed: $('sum-elapsed'),
     sumSets: $('sum-sets'),
     sumReps: $('sum-reps'),
-    btnNew: $('btn-new')
+    btnNew: $('btn-new'),
+    btnInstall: $('btn-install'),
+    installHint: $('install-hint')
   };
 
   // ---------------------------------------------------------------- speech
@@ -380,6 +382,49 @@
     requestWakeLock();
     tick();
   });
+
+  // --------------------------------------------------------------- install
+
+  (function setupInstall() {
+    var btn = el.btnInstall;
+    var hint = el.installHint;
+    var standalone = (typeof window.matchMedia === 'function' &&
+                      window.matchMedia('(display-mode: standalone)').matches) ||
+                     navigator.standalone === true;
+    if (standalone) return; // launched from the home screen: already installed
+
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/.test(ua) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', function (ev) {
+      ev.preventDefault();
+      deferredPrompt = ev;
+      btn.hidden = false;
+    });
+
+    window.addEventListener('appinstalled', function () {
+      deferredPrompt = null;
+      btn.hidden = true;
+      hint.hidden = true;
+    });
+
+    if (isIOS) btn.hidden = false; // Safari has no install prompt; show manual steps instead
+
+    btn.addEventListener('click', function () {
+      if (!deferredPrompt) {
+        hint.hidden = !hint.hidden;
+        return;
+      }
+      var p = deferredPrompt;
+      deferredPrompt = null;
+      p.prompt();
+      p.userChoice.then(function (choice) {
+        if (choice && choice.outcome === 'accepted') btn.hidden = true;
+      }).catch(function () { /* ignore */ });
+    });
+  })();
 
   // ------------------------------------------------------------------ init
 
