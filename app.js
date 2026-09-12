@@ -184,7 +184,6 @@
     if (timerId) clearInterval(timerId);
     timerId = setInterval(tick, TICK_MS);
     requestWakeLock();
-    enterFullscreen();
     showScreen('session');
     render(t);
   }
@@ -290,7 +289,6 @@
     state.paused = false;
     if (timerId) { clearInterval(timerId); timerId = null; }
     releaseWakeLock();
-    exitFullscreen();
     document.body.classList.remove('phase-rest', 'phase-countdown', 'is-paused');
 
     if (natural) speech.say('Done'); else speech.stop();
@@ -484,23 +482,34 @@
 
   // ------------------------------------------------------------ fullscreen
 
+  function fullscreenSupported() {
+    var root = document.documentElement;
+    return typeof (root.requestFullscreen || root.webkitRequestFullscreen) === 'function';
+  }
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
   function enterFullscreen() {
+    if (!fullscreenSupported() || isFullscreen()) return;
     var root = document.documentElement;
     var fn = root.requestFullscreen || root.webkitRequestFullscreen;
-    if (typeof fn !== 'function' || document.fullscreenElement) return;
     try {
       var r = fn.call(root, { navigationUI: 'hide' });
       if (r && typeof r.catch === 'function') r.catch(function () { /* not allowed here */ });
     } catch (e) { /* unsupported */ }
   }
 
-  function exitFullscreen() {
-    var fn = document.exitFullscreen || document.webkitExitFullscreen;
-    if (typeof fn !== 'function' || !(document.fullscreenElement || document.webkitFullscreenElement)) return;
-    try {
-      var r = fn.call(document);
-      if (r && typeof r.catch === 'function') r.catch(function () { /* ignore */ });
-    } catch (e) { /* ignore */ }
+  // Browsers only allow full screen from a user gesture, never on page load, so the
+  // first tap or key press on any screen (the setup form included) enters it, and any
+  // later interaction re-enters it if it was left. Escape is skipped so the browser's
+  // own exit key is not fought.
+  if (fullscreenSupported()) {
+    document.addEventListener('pointerup', function () { enterFullscreen(); }, true);
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape') enterFullscreen();
+    }, true);
   }
 
   // ------------------------------------------------------------------ init
