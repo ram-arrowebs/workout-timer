@@ -36,3 +36,7 @@ use it on a phone.
 - Speech synthesis needs a user gesture first; pressing Start provides it. On iOS the silent
   switch mutes speech.
 - Speech uses the device's default voice and language.
+- Installing cannot be fully automatic: browsers require a tap to confirm. The app shows an install
+  banner on its own; Chrome and Android need one tap, Safari on iPhone shows the Share-menu steps.
+- Full screen: installed copies launch full screen where the platform allows it (Android). In a
+  browser tab the session asks for full screen on Start; iPhone Safari does not support this.

@@ -35,7 +35,11 @@
     sumReps: $('sum-reps'),
     btnNew: $('btn-new'),
     btnInstall: $('btn-install'),
-    installHint: $('install-hint')
+    installHint: $('install-hint'),
+    installBanner: $('install-banner'),
+    installBannerMsg: $('install-banner-msg'),
+    bannerInstall: $('banner-install'),
+    bannerDismiss: $('banner-dismiss')
   };
 
   // ---------------------------------------------------------------- speech
@@ -180,6 +184,7 @@
     if (timerId) clearInterval(timerId);
     timerId = setInterval(tick, TICK_MS);
     requestWakeLock();
+    enterFullscreen();
     showScreen('session');
     render(t);
   }
@@ -285,6 +290,7 @@
     state.paused = false;
     if (timerId) { clearInterval(timerId); timerId = null; }
     releaseWakeLock();
+    exitFullscreen();
     document.body.classList.remove('phase-rest', 'phase-countdown', 'is-paused');
 
     if (natural) speech.say('Done'); else speech.stop();
@@ -385,12 +391,21 @@
 
   // --------------------------------------------------------------- install
 
+  var INSTALL_DISMISS_KEY = 'wotimer.installDismissedAt';
+  var INSTALL_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
+
   (function setupInstall() {
     var btn = el.btnInstall;
     var hint = el.installHint;
-    var standalone = (typeof window.matchMedia === 'function' &&
-                      window.matchMedia('(display-mode: standalone)').matches) ||
-                     navigator.standalone === true;
+    var banner = el.installBanner;
+    var bannerMsg = el.installBannerMsg;
+    var bannerInstall = el.bannerInstall;
+    var bannerDismiss = el.bannerDismiss;
+
+    var standalone = navigator.standalone === true ||
+      (typeof window.matchMedia === 'function' &&
+       (window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches));
     if (standalone) return; // launched from the home screen: already installed
 
     var ua = navigator.userAgent || '';
@@ -398,21 +413,33 @@
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var deferredPrompt = null;
 
-    window.addEventListener('beforeinstallprompt', function (ev) {
-      ev.preventDefault();
-      deferredPrompt = ev;
-      btn.hidden = false;
-    });
+    function snoozed() {
+      try {
+        var at = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY), 10);
+        return at > 0 && Date.now() - at < INSTALL_SNOOZE_MS;
+      } catch (e) { return false; }
+    }
 
-    window.addEventListener('appinstalled', function () {
-      deferredPrompt = null;
-      btn.hidden = true;
-      hint.hidden = true;
-    });
+    function showBanner() {
+      if (snoozed()) return;
+      if (isIOS && !deferredPrompt) {
+        bannerMsg.textContent = 'Tap the Share button in Safari, then choose "Add to Home Screen".';
+        bannerInstall.hidden = true;
+        bannerDismiss.textContent = 'Got it';
+      }
+      banner.hidden = false;
+      document.body.classList.add('has-banner');
+    }
 
-    if (isIOS) btn.hidden = false; // Safari has no install prompt; show manual steps instead
+    function hideBanner(remember) {
+      banner.hidden = true;
+      document.body.classList.remove('has-banner');
+      if (remember) {
+        try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+      }
+    }
 
-    btn.addEventListener('click', function () {
+    function runPrompt() {
       if (!deferredPrompt) {
         hint.hidden = !hint.hidden;
         return;
@@ -421,10 +448,60 @@
       deferredPrompt = null;
       p.prompt();
       p.userChoice.then(function (choice) {
-        if (choice && choice.outcome === 'accepted') btn.hidden = true;
+        if (choice && choice.outcome === 'accepted') {
+          btn.hidden = true;
+          hideBanner(false);
+        }
       }).catch(function () { /* ignore */ });
+    }
+
+    // Chrome, Edge, Android: the browser tells us when the app is installable.
+    // Surface the offer immediately; the native dialog itself still needs one tap.
+    window.addEventListener('beforeinstallprompt', function (ev) {
+      ev.preventDefault();
+      deferredPrompt = ev;
+      btn.hidden = false;
+      showBanner();
     });
+
+    window.addEventListener('appinstalled', function () {
+      deferredPrompt = null;
+      btn.hidden = true;
+      hint.hidden = true;
+      hideBanner(false);
+    });
+
+    // Safari on iPhone/iPad has no install API: show the manual steps automatically.
+    if (isIOS) {
+      btn.hidden = false;
+      showBanner();
+    }
+
+    btn.addEventListener('click', runPrompt);
+    bannerInstall.addEventListener('click', runPrompt);
+    bannerDismiss.addEventListener('click', function () { hideBanner(true); });
   })();
+
+  // ------------------------------------------------------------ fullscreen
+
+  function enterFullscreen() {
+    var root = document.documentElement;
+    var fn = root.requestFullscreen || root.webkitRequestFullscreen;
+    if (typeof fn !== 'function' || document.fullscreenElement) return;
+    try {
+      var r = fn.call(root, { navigationUI: 'hide' });
+      if (r && typeof r.catch === 'function') r.catch(function () { /* not allowed here */ });
+    } catch (e) { /* unsupported */ }
+  }
+
+  function exitFullscreen() {
+    var fn = document.exitFullscreen || document.webkitExitFullscreen;
+    if (typeof fn !== 'function' || !(document.fullscreenElement || document.webkitFullscreenElement)) return;
+    try {
+      var r = fn.call(document);
+      if (r && typeof r.catch === 'function') r.catch(function () { /* ignore */ });
+    } catch (e) { /* ignore */ }
+  }
 
   // ------------------------------------------------------------------ init
 
