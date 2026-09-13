@@ -1,4 +1,4 @@
-var CACHE = 'wotimer-v6';
+var CACHE = 'wotimer-v7';
 var SHELL = [
   './',
   './index.html',
@@ -33,16 +33,18 @@ self.addEventListener('fetch', function (event) {
   var req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
+  // Network first so a deploy (manifest included) shows up on the very next launch;
+  // the cache is only the offline fallback.
   event.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(function (cached) {
-      if (cached) return cached;
-      return fetch(req).then(function (res) {
-        if (res && res.ok) {
-          var copy = res.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
-        }
-        return res;
-      }).catch(function () {
+    fetch(req).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req, { ignoreSearch: true }).then(function (cached) {
+        if (cached) return cached;
         if (req.mode === 'navigate') return caches.match('./index.html');
         return Response.error();
       });
