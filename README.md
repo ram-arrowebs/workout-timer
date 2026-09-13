@@ -36,8 +36,10 @@ use it on a phone.
 - Speech synthesis needs a user gesture first; pressing Start provides it. On iOS the silent
   switch mutes speech.
 - Speech uses the device's default voice and language.
-- Installing cannot be fully automatic: browsers require a tap to confirm. The app shows an install
-  banner on its own; Chrome and Android need one tap, Safari on iPhone shows the Share-menu steps.
-- Full screen: installed copies launch full screen where the platform allows it (Android). In a
-  browser tab, full screen cannot start on page load; the app enters it on the first tap or key
-  press and re-enters on later taps if it was left. iPhone Safari does not support this API.
+- Installing needs a tap to confirm. An "Add to home screen" button appears on the setup screen only
+  when the browser reports the app is installable (Chrome, Edge, Android) and opens the native
+  dialog. On iPhone/iPad Safari, which has no install API, the button shows the Share-menu steps.
+  The button is hidden once the app runs from the home screen.
+- Full screen comes from the manifest's `display: fullscreen`: installed copies launch full screen
+  on Android and without browser chrome on iPhone. A browser tab is never full screen. A copy
+  installed before this setting changed keeps its old mode; remove it and add it again.

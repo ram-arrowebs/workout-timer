@@ -35,11 +35,7 @@
     sumReps: $('sum-reps'),
     btnNew: $('btn-new'),
     btnInstall: $('btn-install'),
-    installHint: $('install-hint'),
-    installBanner: $('install-banner'),
-    installBannerMsg: $('install-banner-msg'),
-    bannerInstall: $('banner-install'),
-    bannerDismiss: $('banner-dismiss')
+    installHint: $('install-hint')
   };
 
   // ---------------------------------------------------------------- speech
@@ -388,129 +384,81 @@
   });
 
   // --------------------------------------------------------------- install
-
-  var INSTALL_DISMISS_KEY = 'wotimer.installDismissedAt';
-  var INSTALL_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
+  //
+  // One "Add to home screen" button, hidden until the browser says the app can be
+  // installed. Chromium browsers (Chrome, Edge, Samsung Internet, Android) fire
+  // beforeinstallprompt; the stashed event is prompted once on click, since a second
+  // prompt() on the same event throws. Safari on iPhone/iPad has no install API, so
+  // there the button reveals the Share-menu steps. Nothing is shown once the app is
+  // running from the home screen.
 
   (function setupInstall() {
     var btn = el.btnInstall;
     var hint = el.installHint;
-    var banner = el.installBanner;
-    var bannerMsg = el.installBannerMsg;
-    var bannerInstall = el.bannerInstall;
-    var bannerDismiss = el.bannerDismiss;
+    var deferredPrompt = null;
 
-    var standalone = navigator.standalone === true ||
-      (typeof window.matchMedia === 'function' &&
-       (window.matchMedia('(display-mode: standalone)').matches ||
-        window.matchMedia('(display-mode: fullscreen)').matches));
-    if (standalone) return; // launched from the home screen: already installed
+    var installedModes = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui)')
+      : null;
+
+    function isInstalled() {
+      return navigator.standalone === true || !!(installedModes && installedModes.matches);
+    }
+
+    function hide() {
+      btn.hidden = true;
+      hint.hidden = true;
+    }
+
+    if (isInstalled()) return;
 
     var ua = navigator.userAgent || '';
     var isIOS = /iPhone|iPad|iPod/.test(ua) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var deferredPrompt = null;
 
-    function snoozed() {
-      try {
-        var at = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY), 10);
-        return at > 0 && Date.now() - at < INSTALL_SNOOZE_MS;
-      } catch (e) { return false; }
-    }
-
-    function showBanner() {
-      if (snoozed()) return;
-      if (isIOS && !deferredPrompt) {
-        bannerMsg.textContent = 'Tap the Share button in Safari, then choose "Add to Home Screen".';
-        bannerInstall.hidden = true;
-        bannerDismiss.textContent = 'Got it';
-      }
-      banner.hidden = false;
-      document.body.classList.add('has-banner');
-    }
-
-    function hideBanner(remember) {
-      banner.hidden = true;
-      document.body.classList.remove('has-banner');
-      if (remember) {
-        try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch (e) { /* ignore */ }
-      }
-    }
-
-    function runPrompt() {
-      if (!deferredPrompt) {
-        hint.hidden = !hint.hidden;
-        return;
-      }
-      var p = deferredPrompt;
-      deferredPrompt = null;
-      p.prompt();
-      p.userChoice.then(function (choice) {
-        if (choice && choice.outcome === 'accepted') {
-          btn.hidden = true;
-          hideBanner(false);
-        }
-      }).catch(function () { /* ignore */ });
-    }
-
-    // Chrome, Edge, Android: the browser tells us when the app is installable.
-    // Surface the offer immediately; the native dialog itself still needs one tap.
     window.addEventListener('beforeinstallprompt', function (ev) {
-      ev.preventDefault();
+      ev.preventDefault(); // suppress the browser's own mini-infobar; we prompt from our button
       deferredPrompt = ev;
+      hint.hidden = true;
       btn.hidden = false;
-      showBanner();
     });
 
     window.addEventListener('appinstalled', function () {
       deferredPrompt = null;
-      btn.hidden = true;
-      hint.hidden = true;
-      hideBanner(false);
+      hide();
     });
 
-    // Safari on iPhone/iPad has no install API: show the manual steps automatically.
-    if (isIOS) {
-      btn.hidden = false;
-      showBanner();
+    // The page can move into an installed window (Chrome desktop opens it right after install).
+    if (installedModes && typeof installedModes.addEventListener === 'function') {
+      installedModes.addEventListener('change', function (ev) { if (ev.matches) hide(); });
     }
 
-    btn.addEventListener('click', runPrompt);
-    bannerInstall.addEventListener('click', runPrompt);
-    bannerDismiss.addEventListener('click', function () { hideBanner(true); });
+    btn.addEventListener('click', function () {
+      if (!deferredPrompt) {
+        hint.hidden = !hint.hidden; // no native dialog available: show the manual steps
+        return;
+      }
+      var p = deferredPrompt;
+      deferredPrompt = null; // prompt() is single-use
+      btn.disabled = true;
+      try {
+        Promise.resolve(p.prompt())
+          .then(function () { return p.userChoice; })
+          .then(function (choice) {
+            btn.disabled = false;
+            if (choice && choice.outcome === 'accepted') hide();
+            // Dismissed: keep the button; the browser fires beforeinstallprompt again on a
+            // later visit while the app is still installable.
+          })
+          .catch(function () { btn.disabled = false; });
+      } catch (e) {
+        btn.disabled = false;
+      }
+    });
+
+    // Safari on iPhone/iPad never fires beforeinstallprompt.
+    if (isIOS) btn.hidden = false;
   })();
-
-  // ------------------------------------------------------------ fullscreen
-
-  function fullscreenSupported() {
-    var root = document.documentElement;
-    return typeof (root.requestFullscreen || root.webkitRequestFullscreen) === 'function';
-  }
-
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function enterFullscreen() {
-    if (!fullscreenSupported() || isFullscreen()) return;
-    var root = document.documentElement;
-    var fn = root.requestFullscreen || root.webkitRequestFullscreen;
-    try {
-      var r = fn.call(root, { navigationUI: 'hide' });
-      if (r && typeof r.catch === 'function') r.catch(function () { /* not allowed here */ });
-    } catch (e) { /* unsupported */ }
-  }
-
-  // Browsers only allow full screen from a user gesture, never on page load, so the
-  // first tap or key press on any screen (the setup form included) enters it, and any
-  // later interaction re-enters it if it was left. Escape is skipped so the browser's
-  // own exit key is not fought.
-  if (fullscreenSupported()) {
-    document.addEventListener('pointerup', function () { enterFullscreen(); }, true);
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key !== 'Escape') enterFullscreen();
-    }, true);
-  }
 
   // ------------------------------------------------------------------ init
 

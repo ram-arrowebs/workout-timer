@@ -1,15 +1,19 @@
 {
+  "id": "workout-counter",
   "name": "Workout Counter",
   "short_name": "Counter",
   "description": "Voice-counted rep and set timer for workouts.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["fitness", "health"],
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "display_override": [
-    "fullscreen",
-    "standalone"
-  ],
   "orientation": "any",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "prefer_related_applications": false,
   "background_color": "#0f1115",
   "theme_color": "#0f1115",
   "icons": [
