@@ -180,6 +180,7 @@
     if (timerId) clearInterval(timerId);
     timerId = setInterval(tick, TICK_MS);
     requestWakeLock();
+    enterFullscreen();
     showScreen('session');
     render(t);
   }
@@ -285,6 +286,7 @@
     state.paused = false;
     if (timerId) { clearInterval(timerId); timerId = null; }
     releaseWakeLock();
+    exitFullscreen();
     document.body.classList.remove('phase-rest', 'phase-countdown', 'is-paused');
 
     if (natural) speech.say('Done'); else speech.stop();
@@ -459,6 +461,31 @@
     // Safari on iPhone/iPad never fires beforeinstallprompt.
     if (isIOS) btn.hidden = false;
   })();
+
+  // ------------------------------------------------------------ fullscreen
+  //
+  // The Start tap is a user gesture, so a session may request full screen there; it is
+  // left again when the workout completes. No-op where the API is missing (iPhone) or
+  // when the app already runs in the manifest's fullscreen display mode.
+
+  function enterFullscreen() {
+    var root = document.documentElement;
+    var fn = root.requestFullscreen || root.webkitRequestFullscreen;
+    if (typeof fn !== 'function' || document.fullscreenElement || document.webkitFullscreenElement) return;
+    try {
+      var r = fn.call(root, { navigationUI: 'hide' });
+      if (r && typeof r.catch === 'function') r.catch(function () { /* not allowed here */ });
+    } catch (e) { /* unsupported */ }
+  }
+
+  function exitFullscreen() {
+    var fn = document.exitFullscreen || document.webkitExitFullscreen;
+    if (typeof fn !== 'function' || !(document.fullscreenElement || document.webkitFullscreenElement)) return;
+    try {
+      var r = fn.call(document);
+      if (r && typeof r.catch === 'function') r.catch(function () { /* ignore */ });
+    } catch (e) { /* ignore */ }
+  }
 
   // ------------------------------------------------------------------ init
 

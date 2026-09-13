@@ -40,6 +40,7 @@ use it on a phone.
   when the browser reports the app is installable (Chrome, Edge, Android) and opens the native
   dialog. On iPhone/iPad Safari, which has no install API, the button shows the Share-menu steps.
   The button is hidden once the app runs from the home screen.
-- Full screen comes from the manifest's `display: fullscreen`: installed copies launch full screen
-  on Android and without browser chrome on iPhone. A browser tab is never full screen. A copy
-  installed before this setting changed keeps its old mode; remove it and add it again.
+- Full screen: installed copies launch full screen from the manifest's `display: fullscreen`
+  (Android; iPhone runs without browser chrome). In a browser tab, pressing Start requests full
+  screen and Complete leaves it; iPhone Safari does not support this API. A copy installed before
+  the manifest changed keeps its old mode; remove it and add it again.
