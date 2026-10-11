@@ -1,0 +1,65 @@
+{
+  "locale": "en-US",
+  "urls": {
+    "marketing": "https://ram-arrowebs.github.io/workout-timer/",
+    "privacyPolicy": "https://ram-arrowebs.github.io/workout-timer/privacy.html",
+    "support": "https://www.arrowebs.com"
+  },
+  "appStore": {
+    "subtitle": "Rep counter that counts aloud",
+    "promotionalText": "Set your sets, reps and rest, press Start and train hands-free. Every rep is spoken out loud and fills the screen, so you never lose count.",
+    "keywords": "rep,reps,sets,rest timer,interval,exercise,gym,voice,spoken,count,fitness,training,tempo,physio",
+    "copyright": "2026 arroWebs Inc",
+    "description": [
+      "Big Workout Counter counts your reps out loud, so your eyes can stay off the screen and your mind on the movement.",
+      "",
+      "Choose your sets, reps per set, seconds per rep and rest between sets, then press Start. After a short get-ready countdown, each rep number is spoken and shown huge on screen. Between sets a rest countdown runs, and the next set is announced when it is time to go again.",
+      "",
+      "FEATURES",
+      "• Spoken rep count at the pace you choose, from half a second to ten minutes per rep",
+      "• Up to 99 sets and 999 reps per set",
+      "• Rest timer between sets, with the next set announced",
+      "• Get-ready countdown with a spoken 3, 2, 1",
+      "• Big, high-contrast numbers you can read from across the room",
+      "• Pause, resume or finish early at any time",
+      "• Summary of total time, sets and reps completed",
+      "• Keeps the screen awake while you train",
+      "• Speaks over your music, even with the silent switch on",
+      "• Remembers your last settings",
+      "• Works offline: no account, no ads, no tracking",
+      "",
+      "Great for tempo training, bodyweight circuits, physio and rehab exercises, planks and holds, and any routine where you would rather listen than count."
+    ],
+    "reviewNotes": "Big Workout Counter needs no account or network connection. Enter sets, reps, seconds per rep and rest, then tap Start: after the get-ready countdown the app speaks each rep number using the device's text-to-speech voice and shows it full screen, runs a rest countdown between sets, and shows a summary at the end. Turn the volume up to hear the counts; they also play with the silent switch on."
+  },
+  "play": {
+    "shortDescription": "Counts every rep out loud and times your rest between sets. Train hands-free.",
+    "description": [
+      "Big Workout Counter counts your reps out loud, so your eyes can stay off the screen and your mind on the movement.",
+      "",
+      "Choose your sets, reps per set, seconds per rep and rest between sets, then press Start. After a short get-ready countdown, each rep number is spoken and shown huge on screen. Between sets a rest countdown runs, and the next set is announced when it is time to go again.",
+      "",
+      "FEATURES",
+      "• Spoken rep count at the pace you choose, from half a second to ten minutes per rep",
+      "• Up to 99 sets and 999 reps per set",
+      "• Rest timer between sets, with the next set announced",
+      "• Get-ready countdown with a spoken 3, 2, 1",
+      "• Big, high-contrast numbers you can read from across the room",
+      "• Pause, resume or finish early at any time",
+      "• Summary of total time, sets and reps completed",
+      "• Keeps the screen awake while you train",
+      "• Speaks over your music",
+      "• Remembers your last settings",
+      "• Works offline: no account, no ads, no tracking",
+      "",
+      "Great for tempo training, bodyweight circuits, physio and rehab exercises, planks and holds, and any routine where you would rather listen than count."
+    ]
+  },
+  "screenshots": [
+    { "state": "setup", "caption": "Set it up in seconds" },
+    { "state": "rep", "caption": "Every rep counted out loud" },
+    { "state": "rest", "caption": "Rest timer between sets" },
+    { "state": "countdown", "caption": "Get ready: 3, 2, 1" },
+    { "state": "summary", "caption": "See what you finished" }
+  ]
+}

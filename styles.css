@@ -56,6 +56,11 @@ body.is-paused { background: var(--bg-paused); }
   padding: 24px;
 }
 
+/* Tablets (iPad mini and up, portrait or large landscape): scale the setup and summary cards. */
+@media (min-width: 740px) and (min-height: 900px) {
+  .setup-card { zoom: 1.4; }
+}
+
 h1 {
   margin: 0 0 8px;
   font-size: 1.6rem;

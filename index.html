@@ -105,7 +105,8 @@
 
   <script src="app.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
+    // The iOS/Android apps bundle every file, so only the website registers the service worker.
+    if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform())) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function () { /* offline support unavailable */ });
       });

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Workout Counter</string>
+    <string name="title_activity_main">Workout Counter</string>
+    <string name="package_name">com.arrowebs.workoutcounter</string>
+    <string name="custom_url_scheme">com.arrowebs.workoutcounter</string>
+</resources>

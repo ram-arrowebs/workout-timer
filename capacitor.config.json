@@ -1,0 +1,16 @@
+{
+  "appId": "com.arrowebs.workoutcounter",
+  "appName": "Workout Counter",
+  "webDir": "www",
+  "backgroundColor": "#0f1115",
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  },
+  "ios": {
+    "contentInset": "never"
+  }
+}

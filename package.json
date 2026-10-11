@@ -1,0 +1,27 @@
+{
+  "name": "workout-counter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Voice-counted rep and set timer for workouts.",
+  "license": "MIT",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "sync": "npm run build:web && cap sync",
+    "assets": "capacitor-assets generate --ios --android --iconBackgroundColor '#0f1115' --iconBackgroundColorDark '#0f1115' --splashBackgroundColor '#0f1115' --splashBackgroundColorDark '#0f1115'"
+  },
+  "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor-community/text-to-speech": "^8.0.2",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3",
+    "playwright": "^1.56.1"
+  },
+  "allowScripts": {
+    "sharp@0.32.6": true
+  }
+}
