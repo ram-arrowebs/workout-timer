@@ -7,6 +7,19 @@
 
   function $(id) { return document.getElementById(id); }
 
+  // Inside the iOS/Android app (Capacitor) the native bridge is injected before this script
+  // runs. Native plugins are called through it directly, since there is no bundler.
+  var cap = window.Capacitor;
+  var isNative = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+
+  function hasNativePlugin(name) {
+    return isNative && (cap.PluginHeaders || []).some(function (p) { return p.name === name; });
+  }
+
+  function nativeCall(plugin, method, options) {
+    return cap.nativePromise(plugin, method, options || {});
+  }
+
   var el = {
     screenSetup: $('screen-setup'),
     screenSession: $('screen-session'),
@@ -41,6 +54,25 @@
   // ---------------------------------------------------------------- speech
 
   var speech = (function () {
+    // Android's WebView has no speechSynthesis, so the apps use the TextToSpeech plugin.
+    // queueStrategy 0 flushes (interrupts) and 1 queues, matching opts.interrupt.
+    if (hasNativePlugin('TextToSpeech')) {
+      var lang = navigator.language || 'en-US';
+      return {
+        supported: true,
+        say: function (text, opts) {
+          var interrupt = !opts || opts.interrupt !== false;
+          nativeCall('TextToSpeech', 'speak', {
+            text: String(text), lang: lang, rate: 1.1, queueStrategy: interrupt ? 0 : 1
+          }).catch(function (e) {
+            // Android rejects a language without an installed voice; fall back for later calls.
+            if (e && /language is not supported/i.test(e.message) && lang !== 'en-US') lang = 'en-US';
+          });
+        },
+        stop: function () { nativeCall('TextToSpeech', 'stop').catch(function () { /* ignore */ }); }
+      };
+    }
+
     var supported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
     var synth = supported ? window.speechSynthesis : null;
 
@@ -69,6 +101,10 @@
   var wakeLock = null;
 
   function requestWakeLock() {
+    if (hasNativePlugin('KeepAwake')) {
+      nativeCall('KeepAwake', 'keepAwake').catch(function () { /* ignore */ });
+      return;
+    }
     if (!('wakeLock' in navigator)) return;
     navigator.wakeLock.request('screen').then(function (lock) {
       wakeLock = lock;
@@ -77,6 +113,10 @@
   }
 
   function releaseWakeLock() {
+    if (hasNativePlugin('KeepAwake')) {
+      nativeCall('KeepAwake', 'allowSleep').catch(function () { /* ignore */ });
+      return;
+    }
     if (!wakeLock) return;
     var lock = wakeLock;
     wakeLock = null;
@@ -412,7 +452,7 @@
       hint.hidden = true;
     }
 
-    if (isInstalled()) return;
+    if (isNative || isInstalled()) return;
 
     var ua = navigator.userAgent || '';
     var isIOS = /iPhone|iPad|iPod/.test(ua) ||
@@ -469,6 +509,7 @@
   // when the app already runs in the manifest's fullscreen display mode.
 
   function enterFullscreen() {
+    if (isNative) return; // the apps hide the system bars natively (SystemBars config)
     var root = document.documentElement;
     var fn = root.requestFullscreen || root.webkitRequestFullscreen;
     if (typeof fn !== 'function' || document.fullscreenElement || document.webkitFullscreenElement) return;
@@ -479,6 +520,7 @@
   }
 
   function exitFullscreen() {
+    if (isNative) return;
     var fn = document.exitFullscreen || document.webkitExitFullscreen;
     if (typeof fn !== 'function' || !(document.fullscreenElement || document.webkitFullscreenElement)) return;
     try {

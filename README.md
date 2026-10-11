@@ -6,7 +6,9 @@ Start. After the countdown (spoken 3, 2, 1) the current rep number
 fills the screen and is spoken by the device. Rest periods show a countdown and announce the next
 set. Pause, resume or complete the session at any time.
 
-No build step and no dependencies: plain HTML, CSS and JavaScript.
+The web app has no build step and no dependencies: plain HTML, CSS and JavaScript. The same files
+are wrapped with [Capacitor](https://capacitorjs.com) for the App Store and Google Play (`ios/`,
+`android/`). Privacy policy: [privacy.html](privacy.html).
 
 Live app: <https://ram-arrowebs.github.io/workout-timer/> (open on your phone and use "Add to Home Screen" to install).
 
@@ -19,6 +21,23 @@ python3 -m http.server 8080
 Open <http://localhost:8080>. Service workers and the install prompt only work on `localhost` or
 over HTTPS, so deploy the folder to any static host (GitHub Pages, Netlify, Cloudflare Pages) to
 use it on a phone.
+
+## Native apps
+
+```
+npm install
+npm run sync                         # copy the web files into the iOS and Android projects
+scripts/release-ios.sh <build>       # signed App Store build (add --upload to send it)
+scripts/release-android.sh <code>    # signed Play App Bundle
+node scripts/play-upload.mjs build/android/<file>.aab   # send it to Play internal testing
+node scripts/screenshots.mjs         # regenerate store screenshots
+```
+
+Store listing text lives in `store/metadata.json`; `scripts/store-ios.mjs` and `scripts/store-play.mjs`
+push it, with the screenshots, to App Store Connect and Google Play.
+
+Requires Xcode and JDK 21. In the apps, speech uses the platform text-to-speech engine and
+plays even with the iPhone silent switch on.
 
 ## Files
 
